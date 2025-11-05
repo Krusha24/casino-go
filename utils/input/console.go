@@ -1,5 +1,4 @@
-// utils/input.go
-package utils
+package input
 
 import (
 	"bufio"
@@ -9,10 +8,9 @@ import (
 	"strings"
 )
 
-// ReadInt запрашивает у пользователя ввод целого числа и проверяет,
-// находится ли оно в заданном диапазоне [min, max] включительно.
-// В случае некорректного ввода повторяет запрос.
-func ReadInt(prompt string, min, max int) (int, error) {
+type ConsoleInput struct{}
+
+func (c *ConsoleInput) ReadInt(prompt string, min, max int) (int, error) {
 	var value int
 	fmt.Print(prompt)
 	for {
@@ -37,10 +35,7 @@ func ReadInt(prompt string, min, max int) (int, error) {
 	}
 }
 
-// ReadFloat запрашивает у пользователя ввод дробного числа и проверяет,
-// находится ли оно в заданном диапазоне [min, max].
-// Если max равен 0, используется math.MaxFloat64.
-func ReadFloat(prompt string, min, max float64) (float64, error) {
+func (c *ConsoleInput) ReadFloat(prompt string, min, max float64) (float64, error) {
 	if max == 0 {
 		max = math.MaxFloat64
 	}
@@ -72,10 +67,7 @@ func ReadFloat(prompt string, min, max float64) (float64, error) {
 	}
 }
 
-// ReadString запрашивает у пользователя ввод строки.
-// Проверяет, что строка не пустая.
-// Если allowSpaces == false, запрещает использование пробелов.
-func ReadString(prompt string, allowSpace bool) (string, error) {
+func (c *ConsoleInput) ReadString(prompt string, allowSpace bool) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print(prompt)
