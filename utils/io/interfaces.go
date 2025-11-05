@@ -1,4 +1,4 @@
-package input
+package io
 
 type InputProvider interface {
 	ReadInt(prompt string, min, max int) (int, error)
@@ -7,11 +7,12 @@ type InputProvider interface {
 }
 
 type OutputWriter interface {
-	OutPutF(prompt string, name string, balance float64)
-	OutPutLN(prompt string)
+	Write(a ...interface{})
+	WriteLine(a ...interface{})
+	Writef(format string, a ...interface{})
 }
 
 type FullIOProvider interface {
 	InputProvider
-	InputProvider
+	OutputWriter
 }

@@ -3,10 +3,10 @@ package main
 
 import (
 	"casino/game"
-	"casino/utils/input"
+	"casino/utils/io"
 )
 
 func main() {
-	var input = input.ConsoleInput{}
-	game.Start(&input)
+	var ConsoleIO = io.ConsoleIO{}
+	game.Start(&ConsoleIO)
 }

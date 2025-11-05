@@ -1,4 +1,4 @@
-package input
+package io
 
 import (
 	"bufio"
@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-type ConsoleInput struct{}
+type ConsoleIO struct{}
 
-func (c *ConsoleInput) ReadInt(prompt string, min, max int) (int, error) {
+func (c *ConsoleIO) ReadInt(prompt string, min, max int) (int, error) {
 	var value int
 	fmt.Print(prompt)
 	for {
@@ -35,7 +35,7 @@ func (c *ConsoleInput) ReadInt(prompt string, min, max int) (int, error) {
 	}
 }
 
-func (c *ConsoleInput) ReadFloat(prompt string, min, max float64) (float64, error) {
+func (c *ConsoleIO) ReadFloat(prompt string, min, max float64) (float64, error) {
 	if max == 0 {
 		max = math.MaxFloat64
 	}
@@ -67,7 +67,7 @@ func (c *ConsoleInput) ReadFloat(prompt string, min, max float64) (float64, erro
 	}
 }
 
-func (c *ConsoleInput) ReadString(prompt string, allowSpace bool) (string, error) {
+func (c *ConsoleIO) ReadString(prompt string, allowSpace bool) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print(prompt)
@@ -90,4 +90,16 @@ func (c *ConsoleInput) ReadString(prompt string, allowSpace bool) (string, error
 
 		return input, nil
 	}
+}
+
+func (c *ConsoleIO) Write(a ...interface{}) {
+	fmt.Print(a...)
+}
+
+func (c *ConsoleIO) WriteLine(a ...interface{}) {
+	fmt.Println(a...)
+}
+
+func (c *ConsoleIO) Writef(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
 }
