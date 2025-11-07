@@ -120,3 +120,9 @@ func (c *ConsoleIO) WriteLine(a ...interface{}) {
 func (c *ConsoleIO) Writef(format string, a ...interface{}) {
 	fmt.Printf(format, a...)
 }
+
+// Swritef форматирует строку, используя синтаксис Printf, и ВОЗВРАЩАЕТ ее.
+// Реализует метод интерфейса OutputWriter.
+func (c *ConsoleIO) Swritef(format string, a ...interface{}) string {
+	return fmt.Sprintf(format, a...)
+}

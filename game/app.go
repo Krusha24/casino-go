@@ -9,38 +9,66 @@ import (
 )
 
 // Menu запускает главное меню казино и цикл выбора игр, пока у игрока есть деньги.
-// Функция принимает указатель на объект игрока, провайдер ввода/вывода (io) и логгер.
-// Возвращает false, если игрок решил выйти или его баланс иссяк.
-func Menu(player *player.Player, io io.FullIOProvider, logger logservice.IFullLogger) bool {
+//
+// Функция динамически формирует меню на основе переданного списка игр (gamesList),
+// запрашивает выбор у пользователя и запускает выбранную игру через интерфейс IGame.
+//
+// Возвращает false, если игрок решил выйти (выбор 0) или его баланс иссяк.
+func Menu(player *player.Player, io io.FullIOProvider, logger logservice.IFullLogger, gamesList []IGame) bool {
 	logger.Info("Функция меню запустилась")
-	var prompt string
+
 	for player.Balance > 0 {
-		prompt = "Чего вы хотите?\nВыйти из казино - 0\nПоиграть в угадайку - 1\n"
-		choice, err := io.ReadInt(prompt, 0, 1)
+		prompt := "Чего вы хотите?\nВыйти из казино - 0\n"
+
+		for i, game := range gamesList {
+			prompt += io.Swritef("%d: %s\n", i+1, game.Name())
+		}
+
+		maxChoice := len(gamesList)
+
+		choice, err := io.ReadInt(prompt, 0, maxChoice)
 		if err != nil {
 			logger.Fatal("Ошибка при чтении баланса пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
 			return false
 		}
+
 		switch {
 		case choice == 0:
 			logger.Info("Пользователь вышел из казино")
 			io.WriteLine(player.StatsString())
 			io.WriteLine("Всего доброго!")
 			return false
-		case choice == 1:
-			// GuessNumber возвращает true, если игрок вышел из игры.
-			// Мы игнорируем его возвращаемое значение и продолжаем цикл Menu.
-			guessnumber.Play(player, io, logger)
+		default:
+			gameIndex := choice - 1
+
+			if gameIndex >= 0 && gameIndex < len(gamesList) {
+				chosenGame := gamesList[gameIndex]
+				gameHasBalance := chosenGame.Play(player, io, logger)
+
+				if !gameHasBalance {
+					return false
+				}
+			}
 		}
 	}
+	// Если цикл завершился из-за отсутствия денег.
 	return false
 }
 
 // Start запускает приложение казино.
-// Функция выполняет инициализацию (запрос имени и стартового баланса)
-// и запускает главное меню (Menu).
+//
+// Выполняет первоначальную инициализацию: создание списка доступных игр,
+// запрос имени и стартового баланса у пользователя, создание объекта игрока,
+// а затем запускает главное меню (Menu).
 func Start(io io.FullIOProvider, logger logservice.IFullLogger) {
+	// 1. Инициализация списка доступных игр
+	// GamesList теперь определяется здесь, а не как глобальная переменная
+	gamesList := []IGame{
+		// Инициализируем экземпляр игры "Угадайка"
+		guessnumber.NewGame(),
+	}
+
 	var name string
 	var balance float64
 	var prompt string
@@ -65,5 +93,5 @@ func Start(io io.FullIOProvider, logger logservice.IFullLogger) {
 	player := player.NewPlayer(name, balance)
 
 	io.Writef("Привет, %s! Ты начинаешь с балансом %.2f.\n", player.Name, player.Balance)
-	Menu(&player, io, logger)
+	Menu(&player, io, logger, gamesList)
 }
