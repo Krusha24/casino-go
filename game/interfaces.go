@@ -3,7 +3,8 @@ package game
 import (
 	"casino/logservice"
 	"casino/player"
-	"casino/utils/io"
+	"casino/utils/ui"
+	"context"
 )
 
 // IGame определяет общий контракт для всех игр в казино.
@@ -13,7 +14,7 @@ type IGame interface {
 	// Принимает игрока, I/O провайдер и логгер.
 	// Возвращает true, если у игрока остался баланс и он вернулся в главное меню,
 	// или false, если игра завершилась из-за нулевого баланса.
-	Play(player *player.Player, io io.FullIOProvider, logger logservice.IFullLogger) bool
+	Play(ctx context.Context, player *player.Player, io ui.FullIOProvider, logger logservice.IFullLogger) (bool, error)
 
 	// Name возвращает название игры для отображения в меню.
 	Name() string

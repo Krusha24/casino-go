@@ -18,13 +18,13 @@ func randRange(min, max int) int {
 // CreateWinIndexes генерирует слайс указанного количества (difficult)
 // уникальных случайных чисел в заданном диапазоне [1, 10] включительно.
 // Количество генерируемых чисел равно значению 'difficult'.
-func CreateWinIndexes(difficult int) []int {
+func CreateWinIndexes(difficulty int) []int {
 	// Используем map для эффективного отслеживания уникальности (O(1) поиск).
 	// Значение true просто отмечает присутствие ключа.
 	uniqueNumbers := make(map[int]bool)
 
 	// Цикл повторяется, пока мы не сгенерируем нужное количество уникальных чисел
-	for len(uniqueNumbers) < difficult {
+	for len(uniqueNumbers) < difficulty {
 		// Генерируем число от 1 до 10 включительно.
 		randomValue := randRange(1, 10)
 
@@ -36,7 +36,7 @@ func CreateWinIndexes(difficult int) []int {
 	}
 
 	// Преобразуем map обратно в слайс для возврата.
-	winIndexesSlice := make([]int, 0, difficult)
+	winIndexesSlice := make([]int, 0, difficulty)
 	for num := range uniqueNumbers {
 		winIndexesSlice = append(winIndexesSlice, num)
 	}

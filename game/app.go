@@ -5,7 +5,9 @@ import (
 	"casino/game/guessnumber"
 	"casino/logservice"
 	"casino/player"
-	"casino/utils/io"
+	"casino/utils/ui"
+	"context"
+	"fmt"
 )
 
 // Menu запускает главное меню казино и цикл выбора игр, пока у игрока есть деньги.
@@ -14,23 +16,23 @@ import (
 // запрашивает выбор у пользователя и запускает выбранную игру через интерфейс IGame.
 //
 // Возвращает false, если игрок решил выйти (выбор 0) или его баланс иссяк.
-func Menu(player *player.Player, io io.FullIOProvider, logger logservice.IFullLogger, gamesList []IGame) bool {
+func Menu(ctx context.Context, player *player.Player, io ui.FullIOProvider, logger logservice.IFullLogger, gamesList []IGame) (bool, error) {
 	logger.Info("Функция меню запустилась")
 
 	for player.Balance > 0 {
 		prompt := "Чего вы хотите?\nВыйти из казино - 0\n"
 
 		for i, game := range gamesList {
-			prompt += io.Swritef("%d: %s\n", i+1, game.Name())
+			prompt += fmt.Sprintf("%d: %s\n", i+1, game.Name())
 		}
 
 		maxChoice := len(gamesList)
 
-		choice, err := io.ReadInt(prompt, 0, maxChoice)
+		choice, err := io.ReadIntCtx(ctx, prompt, 0, maxChoice)
 		if err != nil {
-			logger.Fatal("Ошибка при чтении баланса пользователя: %v", err)
+			logger.Fatal("Ошибка при выборе игры пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-			return false
+			return false, err
 		}
 
 		switch {
@@ -38,22 +40,24 @@ func Menu(player *player.Player, io io.FullIOProvider, logger logservice.IFullLo
 			logger.Info("Пользователь вышел из казино")
 			io.WriteLine(player.StatsString())
 			io.WriteLine("Всего доброго!")
-			return false
+			return true, nil
 		default:
 			gameIndex := choice - 1
 
 			if gameIndex >= 0 && gameIndex < len(gamesList) {
 				chosenGame := gamesList[gameIndex]
-				gameHasBalance := chosenGame.Play(player, io, logger)
-
+				gameHasBalance, err := chosenGame.Play(ctx, player, io, logger)
+				if err != nil {
+					return false, err
+				}
 				if !gameHasBalance {
-					return false
+					return false, nil
 				}
 			}
 		}
 	}
 	// Если цикл завершился из-за отсутствия денег.
-	return false
+	return false, nil
 }
 
 // Start запускает приложение казино.
@@ -61,7 +65,7 @@ func Menu(player *player.Player, io io.FullIOProvider, logger logservice.IFullLo
 // Выполняет первоначальную инициализацию: создание списка доступных игр,
 // запрос имени и стартового баланса у пользователя, создание объекта игрока,
 // а затем запускает главное меню (Menu).
-func Start(io io.FullIOProvider, logger logservice.IFullLogger) {
+func Start(ctx context.Context, io ui.FullIOProvider, logger logservice.IFullLogger) error {
 	// 1. Инициализация списка доступных игр
 	// GamesList теперь определяется здесь, а не как глобальная переменная
 	gamesList := []IGame{
@@ -74,24 +78,37 @@ func Start(io io.FullIOProvider, logger logservice.IFullLogger) {
 	var prompt string
 
 	prompt = "Привет! Как тебя зовут? "
-	name, err := io.ReadString(prompt, true)
+	name, err := io.ReadStringCtx(ctx, prompt, true)
 	if err != nil {
 		logger.Fatal("Ошибка при чтении имени пользователя: %v", err)
 		io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-		return
+		return err
 	}
 
 	// Max = 0 в ReadFloat означает, что максимальное значение не ограничено
 	prompt = "И сколько же у тебя денег? "
-	balance, err = io.ReadFloat(prompt, 1, 0)
+	balance, err = io.ReadFloatMinCtx(ctx, prompt, 1)
 	if err != nil {
 		logger.Fatal("Ошибка при чтении баланса пользователя: %v", err)
 		io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-		return
+		return err
 	}
 
 	player := player.NewPlayer(name, balance)
 
 	io.Writef("Привет, %s! Ты начинаешь с балансом %.2f.\n", player.Name, player.Balance)
-	Menu(&player, io, logger, gamesList)
+
+	exited, err := Menu(ctx, &player, io, logger, gamesList)
+	if err != nil {
+		logger.Fatal("Меню завершилось ошибкой: %v", err)
+		return err
+	}
+
+	if exited {
+		logger.Info("Игрок %s вышел из казино сам. Итоговый баланс: %.2f", player.Name, player.Balance)
+	} else {
+		logger.Warn("Игрок %s обанкротился. Итоговый баланс: %.2f", player.Name, player.Balance)
+	}
+
+	return nil
 }

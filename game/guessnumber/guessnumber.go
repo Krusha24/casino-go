@@ -4,20 +4,21 @@ import (
 	"casino/logservice"
 	"casino/player"
 	"casino/utils"
-	"casino/utils/io"
+	"casino/utils/ui"
+	"context"
 )
 
 // Guessnumber является конкретной реализацией интерфейса game.IGame.
-type Guessnumber struct{}
+type GuessNumber struct{}
 
 // NewGame создает новый экземпляр игры "Угадайка".
-func NewGame() *Guessnumber {
-	return &Guessnumber{}
+func NewGame() *GuessNumber {
+	return &GuessNumber{}
 }
 
 // Name возвращает название игры для отображения в меню.
 // Реализует метод интерфейса game.IGame.
-func (g Guessnumber) Name() string {
+func (g GuessNumber) Name() string {
 	return "Поиграть в угадайку"
 }
 
@@ -25,7 +26,7 @@ func (g Guessnumber) Name() string {
 // Реализует метод интерфейса game.IGame.
 // Возвращает true, если игрок решил выйти до потери всего баланса,
 // и false, если игрок потерял весь баланс.
-func (g Guessnumber) Play(p *player.Player, io io.FullIOProvider, logger logservice.IFullLogger) bool {
+func (g GuessNumber) Play(ctx context.Context, p *player.Player, io ui.FullIOProvider, logger logservice.IFullLogger) (bool, error) {
 	logger.Info("Игрок %s начал игру 'Угадайка' с балансом %.2f", p.Name, p.Balance)
 
 	io.WriteLine("===================================")
@@ -35,45 +36,45 @@ func (g Guessnumber) Play(p *player.Player, io io.FullIOProvider, logger logserv
 	for p.Balance > 0 {
 		io.Writef("Ваш текущий баланс: %.2f\n", p.Balance)
 
-		choice, err := io.ReadInt("Продолжить игру (1) или Выйти в главное меню (2)? ", 1, 2)
+		choice, err := io.ReadIntCtx(ctx, "Продолжить игру (1) или Выйти в главное меню (2)? ", 1, 2)
 		if err != nil {
 			logger.Fatal("Ошибка при чтении ввода пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-			return false
+			return false, err
 		}
 
 		if choice == 2 {
 			logger.Info("Игрок %s вышел из игры 'Угадайка', баланс %.2f", p.Name, p.Balance)
-			return true // Игрок вышел, баланс > 0, возвращаемся в Menu.
+			return true, nil // Игрок вышел, баланс > 0, возвращаемся в Menu.
 		}
 
-		difficult, err := io.ReadInt("Сколько правильных чисел вы хотите?\n1: коэффициент - 10\n2: коэффициент - 4.5\n3: коэффициент - 2.5\n4: коэффициент - 1.7\n", 1, 4)
+		difficulty, err := io.ReadIntCtx(ctx, "Сколько правильных чисел вы хотите?\n1: коэффициент - 10\n2: коэффициент - 4.5\n3: коэффициент - 2.5\n4: коэффициент - 1.7\n", 1, 4)
 		if err != nil {
 			logger.Fatal("Ошибка при чтении ввода пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-			return false
+			return false, err
 		}
 
-		var winIndexes = utils.CreateWinIndexes(difficult)
+		var winIndexes = utils.CreateWinIndexes(difficulty)
 
-		p.Bet, err = io.ReadFloat("Введите вашу ставку: ", 0, p.Balance)
+		p.Bet, err = io.ReadFloatRangeCtx(ctx, "Введите вашу ставку: ", 0.01, p.Balance)
 		if err != nil {
 			logger.Fatal("Ошибка при чтении ввода пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-			return false
+			return false, err
 		}
 
-		choosenNumber, err := io.ReadInt("Выберите выйграшное число от 1 до 10: ", 1, 10)
+		chosenNumber, err := io.ReadIntCtx(ctx, "Выберите выигрышное число число от 1 до 10: ", 1, 10)
 		if err != nil {
 			logger.Fatal("Ошибка при чтении ввода пользователя: %v", err)
 			io.WriteLine("Критическая ошибка ввода. Приложение завершается.")
-			return false
+			return false, err
 		}
 
 		var isWinner bool
 		for _, value := range winIndexes {
-			if value == choosenNumber {
-				winningSum := calculateWinnings(difficult, p.Bet)
+			if value == chosenNumber {
+				winningSum := calculateNetWinnings(difficulty, p.Bet)
 				isWinner = true
 				bet := p.Bet
 				p.Win(winningSum)
@@ -93,5 +94,5 @@ func (g Guessnumber) Play(p *player.Player, io io.FullIOProvider, logger logserv
 	}
 	io.WriteLine("\n!!! У ВАС ЗАКОНЧИЛИСЬ ДЕНЬГИ. ИГРА ОКОНЧЕНА !!!\n")
 	logger.Warn("Игрок %s потерял весь баланс и покинул казино.", p.Name)
-	return false
+	return false, nil
 }

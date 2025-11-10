@@ -1,15 +1,11 @@
 package guessnumber
 
-import (
-	"math"
-)
-
 // CalculateNetWinnings рассчитывает сумму чистого выигрыша (Payout - Bet)
 // исходя из сложности (difficult) и ставки (bet).
 //
 // Использует предопределенную таблицу коэффициентов.
 // Коэффициенты: 1 - Самый сложный (10x), 4 - Самый легкий (1.7x).
-func calculateWinnings(difficult int, bet float64) float64 {
+func calculateNetWinnings(difficulty int, bet float64) float64 {
 	// Коэффициенты полной выплаты (включая ставку): Payout = Bet * X[difficult]
 	payoutCoefficients := map[int]float64{
 		1: 10.0, // Высокий риск, высокий выигрыш
@@ -19,7 +15,7 @@ func calculateWinnings(difficult int, bet float64) float64 {
 	}
 
 	// Получаем коэффициент, если он существует. Если нет, выплаты нет.
-	coefficient, exists := payoutCoefficients[difficult]
+	coefficient, exists := payoutCoefficients[difficulty]
 	if !exists {
 		return 0.0
 	}
@@ -30,5 +26,5 @@ func calculateWinnings(difficult int, bet float64) float64 {
 	// Расчет чистого выигрыша (прибыли): Payout - Bet
 	netWinnings := totalPayout - bet
 
-	return math.Round(netWinnings*100) / 100
+	return netWinnings
 }

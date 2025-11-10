@@ -31,7 +31,7 @@ func NewFullLogger() IFullLogger {
 
 // LogGame записывает информацию об одном раунде игры в файл game_history.log.
 // Реализует метод интерфейса IGameLogger.
-func (f FullLogger) LogGame(name string, bet float64, result string, balance float64) error {
+func (f *FullLogger) LogGame(name string, bet float64, result string, balance float64) error {
 	// 1. Создаем папку 'log/', если она не существует
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return fmt.Errorf("не удалось создать директорию %s: %w", logDir, err)
@@ -83,5 +83,4 @@ func (c *FullLogger) Error(format string, a ...interface{}) {
 // Реализует метод интерфейса ISystemLogger.
 func (c *FullLogger) Fatal(format string, a ...interface{}) {
 	log.Printf("[FATAL] "+format, a...)
-	os.Exit(1)
 }
